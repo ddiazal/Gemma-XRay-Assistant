@@ -11,24 +11,28 @@ model = AutoModelForImageTextToText.from_pretrained(
     device_map="mpc",
 )
 
+processor = AutoProcessor.from_pretrained(model_id)
+
+
 class Assistant:
     def __init__(self) -> None:
         self.model = model
-        self.processor = AutoProcessor.from_pretrained(model_id)
+        self.processor: AutoProcessor = processor
 
     def __call__(self, image) -> str:
         im_inputs: Tensor = self.get_inputs(image)
 
         response_tensor: Tensor = self.get_inference(inputs=im_inputs, max_tokens=200)
 
-        generated_report: str = self.processor.decode(response_tensor, skip_special_tokens=True)
+        generated_report: str = self.processor.decode(
+            response_tensor, skip_special_tokens=True
+        )
 
         return generated_report
 
-
     @staticmethod
     def get_message(image) -> List[Dict[str, Any]]:
-        messages = [
+        messages: list[dict[str, Any]] = [
             {
                 "role": "system",
                 "content": [
@@ -49,37 +53,42 @@ class Assistant:
                             "# Output Format\n"
                             "Provide your description inside <report></report> tags.\n\n"
                             "# Output\n"
-                        )
+                        ),
                     }
-                ]
+                ],
             },
             {
                 "role": "user",
                 "content": [
                     {"type": "text", "text": "Describe this X-ray"},
-                    {"type": "image", "image": image}
-                ]
-            }
+                    {"type": "image", "image": image},
+                ],
+            },
         ]
 
         return messages
 
-    def get_inference(self, inputs: Any, max_tokens: int = 200) -> Tensor:
-        input_len = inputs["input_ids"].shape[-1]
+    def get_inference(self, inputs: Tensor, max_tokens: int = 200) -> Tensor:
+        input_len: Tensor = inputs["input_ids"].shape[-1]
         with torch.inference_mode():
-            generation = self.model.generate(**inputs, max_new_tokens=max_tokens, do_sample=False)
+            generation = self.model.generate(
+                **inputs, max_new_tokens=max_tokens, do_sample=False
+            )
             generation = generation[0][input_len:]
 
         return generation
 
     def get_inputs(self, image) -> Tensor:
-        messages = self.get_message(image)
-        inputs = self.processor.apply_chat_template(
-            messages, add_generation_prompt=True, tokenize=True,
-            return_dict=True, return_tensors="pt"
+        messages: list[dict[str, Any]] = self.get_message(image)
+        inputs: Tensor = self.processor.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
         ).to(self.model.device, dtype=torch.bfloat16)
 
         return inputs
 
     def generation_accuracy(self, image) -> float:
-        generation = self.get_inference(image)
+        generation: str = self.get_inference(image)
