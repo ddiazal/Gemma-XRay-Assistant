@@ -1,0 +1,7 @@
+accelerate
+torch
+transformers
+requests
+streamlit
+fastapi[standard]
+uvicorn
