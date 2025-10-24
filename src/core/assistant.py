@@ -1,10 +1,11 @@
 from huggingface_hub import login
+import os
 from torch import Tensor
 from transformers import AutoProcessor, AutoModelForImageTextToText
 import torch
 from typing import Any
 
-hf_access_token: str = "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"
+hf_access_token: str = os.getenv("HF_ACCESS_TOKEN")
 login(token=hf_access_token)
 
 model_id = "google/medgemma-4b-it"
