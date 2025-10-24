@@ -1,14 +1,18 @@
+from huggingface_hub import login
 from torch import Tensor
 from transformers import AutoProcessor, AutoModelForImageTextToText
 import torch
-from typing import Any, Dict, List
+from typing import Any
+
+hf_access_token: str = "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"
+login(token=hf_access_token)
 
 model_id = "google/medgemma-4b-it"
 
 model = AutoModelForImageTextToText.from_pretrained(
     model_id,
     torch_dtype=torch.bfloat16,
-    device_map="mpc",
+    device_map="mps",
 )
 
 processor = AutoProcessor.from_pretrained(model_id)
@@ -19,12 +23,12 @@ class Assistant:
         self.model = model
         self.processor: AutoProcessor = processor
 
-    def __call__(self, image) -> str:
+    def __call__(self, image) -> str | None:
         im_inputs: Tensor = self.get_inputs(image)
 
         response_tensor: Tensor = self.get_inference(inputs=im_inputs, max_tokens=200)
 
-        generated_report: str = self.processor.decode(
+        generated_report: str | None = self.processor.decode(
             response_tensor, skip_special_tokens=True
         )
 
